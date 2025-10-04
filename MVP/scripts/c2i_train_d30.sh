@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# 设置训练环境变量
+export CUDA_VISIBLE_DEVICES=0  # 设置使用的GPU
+
+# ===== 1) 先做重建 =====
+echo "[`date '+%F %T'`] Start reconstruction..."
+python /fs/scratch/PAS2473/MM2025/neurpis2025/ICASSP/VAR/res.py
+echo "[`date '+%F %T'`] Reconstruction done."
+
+# ===== 2) 再启动训练 =====
+echo "[`date '+%F %T'`] Start training..."
+
+# 单节点训练
+torchrun --nproc_per_node=1 --master_port=29502 /fs/scratch/PAS2473/MM2025/neurpis2025/VAR/c2i_train2.py \
+  --depth=30 \
+  --bs=58 \
+  --ep=1 \
+  --fp16=1 \
+  --tlr=5e-4 \
+  --alng=1e-3 \
+  --wpe=0.1 \
+  --control_strength=0.5 \
+  --n_cond_embed=768 \
+  --data_load_reso=256 \
+  --outer_nums=28
+
+# 多GPU训练示例
+# torchrun --nproc_per_node=4 --nnodes=1 --node_rank=0 --master_addr=localhost --master_port=29500 train2.py \
+#   --depth=20 \
+#   --bs=32 \
+#   --ep=50 \
+#   --fp16=1 \
+#   --tlr=1e-4 \
+#   --alng=1e-3 \
+#   --wpe=0.1 \
+#   --control_strength=1.0 \
+#   --n_cond_embed=768 \
+#   --data_path=/path/to/your/data \
+#   --caption_file=/path/to/caption/file.json \
+#   --synset_file=/path/to/synset/file.txt \
+#   --data_load_reso=256
+
+# 多节点训练示例
+# torchrun --nproc_per_node=8 --nnodes=2 --node_rank=0 --master_addr=MASTER_IP --master_port=29500 train2.py \
+#   --depth=20 \
+#   --bs=32 \
+#   --ep=50 \
+#   --fp16=1 \
+#   --tlr=1e-4 \
+#   --alng=1e-3 \
+#   --wpe=0.1 \
+#   --control_strength=1.0 \
+#   --n_cond_embed=768 \
+#   --data_path=/path/to/your/data \
+#   --caption_file=/path/to/caption/file.json \
+#   --synset_file=/path/to/synset/file.txt \
+#   --data_load_reso=256
